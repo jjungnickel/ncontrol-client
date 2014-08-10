@@ -11,8 +11,10 @@ object NcontrolClientBuild extends Build {
       organization := "com.jungnickel",
       version := "0.1",
       scalaVersion := "2.10.4",
-      libraryDependencies +=
-        "net.databinder.dispatch" %% "dispatch-core" % "0.11.1"
+      libraryDependencies ++= Seq(
+        "net.databinder.dispatch" %% "dispatch-core" % "0.11.1",
+        "org.jsoup" % "jsoup" % "1.7.3"
+      )
     )
   )
 }

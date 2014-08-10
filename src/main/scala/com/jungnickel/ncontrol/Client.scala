@@ -5,6 +5,7 @@ import com.ning.http.client
 import com.ning.http.client.Response
 import com.ning.http.client.cookie.Cookie
 import dispatch._
+import org.jsoup.Jsoup
 
 import scala.concurrent.Await
 
@@ -41,11 +42,33 @@ class Client(customer: String, extension: Int, pin: Int) {
 
     Await.result(Http(req > LoginCookie), 10 seconds)
   }
+
   implicit val executor = Defaults.executor
 
   private val nfon = host("ncontrol.nfon.net").secure / "de" setHeader("Accept-Language", "de")
 
-  def service() = nfon addCookie login
+  private def service = nfon addCookie login
+
+  def callForwardProfiles(): Seq[Profile] = {
+    object ProfileList extends (client.Response => List[Profile]) {
+
+      import scala.collection.JavaConverters._
+
+      override def apply(rsp: Response): List[Profile] = {
+        val profilePage = Jsoup.parse(rsp.getResponseBodyAsStream, "utf-8", "/")
+        val profiles = profilePage
+          .select("select[id=profileCallforwards]")
+          .select("option").asScala.toList
+        profiles map { elem =>
+          Profile(elem.`val`().toInt, elem.text())
+        }
+      }
+    }
+    import scala.concurrent.duration._
+
+    val req = Http(service / "profiles" / "callforwards" > ProfileList)
+    Await.result(req, 10 seconds)
+  }
 
   case class Profile(id: Int, name: String)
 
